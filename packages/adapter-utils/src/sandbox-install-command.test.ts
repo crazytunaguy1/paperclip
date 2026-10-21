@@ -44,6 +44,9 @@ describe("Node bootstrap checksum gate", () => {
       { mode: 0o755 },
     );
     fs.writeFileSync(path.join(stubBin, "uname"), "#!/bin/sh\necho aarch64\n", { mode: 0o755 });
+    // A failing `node` stub shadows any host Node in /usr/bin or /bin, so the
+    // version probe fails and the preamble always takes the bootstrap branch.
+    fs.writeFileSync(path.join(stubBin, "node"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
   });
 
   afterEach(() => {
@@ -51,7 +54,6 @@ describe("Node bootstrap checksum gate", () => {
   });
 
   function run(preamble: string) {
-    // PATH has no node/npm, so the preamble always takes the bootstrap branch.
     return spawnSync("sh", ["-c", `${preamble} echo "BOOT=$PAPERCLIP_NPM_BOOTSTRAPPED"`], {
       env: { HOME: home, PATH: `${stubBin}:/usr/bin:/bin` },
       encoding: "utf8",
